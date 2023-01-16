@@ -157,6 +157,8 @@ crackmapexec ldap 10.10.10.1 -u 'john' -p 'password123' --trusted-for-delegation
  
  - GetNPUsers.py: 
  
+ Can be used from a Linux machine in order to harvest the non-preauth AS_REP responses. See Kerberoas cheatsheet.
+ 
  ```bash
  python3 GetUserSPNs.py test.local/john:password123 -dc-ip 10.10.10.1 -request
  ```
