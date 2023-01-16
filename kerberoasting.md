@@ -2,6 +2,8 @@
 
 ## Bruteforcing
 
+WARNING: Use this technique carefully. You may end up locking a user. 
+
 With [kerbrute.py](https://github.com/TarlogicSecurity/kerbrute):
 ```shell
 python kerbrute.py -domain <domain_name> -users <users_file> -passwords <passwords_file> -outputfile <output_file>
