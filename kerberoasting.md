@@ -18,6 +18,8 @@ With [Rubeus](https://github.com/Zer1t0/Rubeus) version with brute module:
 
 ## ASREPRoast
 
+The ASREPRoast attack looks for users without Kerberos pre-authentication required. That means that anyone can send an AS_REQ request to the KDC on behalf of any of those users, and receive an AS_REP message. This last kind of message contains a chunk of data encrypted with the original user key, derived from its password. Then, by using this message, the user password could be cracked offline. More detail in Kerberos theory.
+
 With [Impacket](https://github.com/SecureAuthCorp/impacket) example GetNPUsers.py:
 ```shell
 # check ASREPRoast for all domain users (credentials required)
