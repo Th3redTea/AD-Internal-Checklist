@@ -278,7 +278,7 @@ python -c 'import hashlib,binascii; print binascii.hexlify(hashlib.new("md4", "<
 ```
 
 ## Tools
-
+* [Kerberoasting](https://www.tarlogic.com/blog/how-to-attack-kerberos/)
 * [Impacket](https://github.com/SecureAuthCorp/impacket)
 * [Mimikatz](https://github.com/gentilkiwi/mimikatz)
 * [Rubeus](https://github.com/GhostPack/Rubeus)
